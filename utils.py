@@ -22,17 +22,13 @@ def get_df():
 def get_person_balanced_df(df, person, categories, cat_vars, num_vars):
     transations_list = []
     labels_list = []
-    df_cp = df[categories].copy()
-    cat_data = pd.get_dummies(df_cp[cat_vars])
-    numeric_data = df_cp[num_vars].copy()
-    numeric_cat_data = pd.concat([numeric_data, cat_data], axis=1)
-    initials = df_cp.loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
+    numeric_cat_data = pd.concat([df[num_vars].copy(), pd.get_dummies(df[cat_vars])], axis=1)
+    initials = df.loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
 
     for initial in initials:
-        numeric_cat_label_data = numeric_cat_data.copy()
-        numeric_cat_label_data['label'] = (df['Cardholder Last Name'] == person)*(df['Cardholder First Initial'] == initial)
-        df_true_transations = numeric_cat_label_data.loc[numeric_cat_label_data['label'] == True].copy()
-        df_false_transations = numeric_cat_label_data.loc[numeric_cat_label_data['label'] == False].sample(n=df_true_transations.shape[0]).copy()
+        numeric_cat_data['label'] = (df['Cardholder Last Name'] == person)*(df['Cardholder First Initial'] == initial)
+        df_true_transations = numeric_cat_data.loc[numeric_cat_data['label'] == True].copy()
+        df_false_transations = numeric_cat_data.loc[numeric_cat_data['label'] == False].sample(n=df_true_transations.shape[0]).copy()
         df_transations = pd.concat([df_true_transations, df_false_transations], axis=0)
         label = df_transations['label']
         df_transations.drop('label', axis=1, inplace=True)
@@ -45,11 +41,8 @@ def get_person_balanced_df(df, person, categories, cat_vars, num_vars):
 def get_person_true_transations_df(df, person, categories, cat_vars, num_vars):
     transations_list = []
     labels_list = []
-    df_cp = df[categories].copy()
-    cat_data = pd.get_dummies(df_cp[cat_vars])
-    numeric_data = df_cp[num_vars].copy()
-    numeric_cat_data = pd.concat([numeric_data, cat_data], axis=1)
-    initials = df_cp.loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
+    numeric_cat_data = pd.concat([df[categories][num_vars].copy(), pd.get_dummies(df[categories][cat_vars])], axis=1)
+    initials = df[categories].loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
 
     for initial in initials:
         numeric_cat_label_data = numeric_cat_data.copy()
@@ -57,27 +50,25 @@ def get_person_true_transations_df(df, person, categories, cat_vars, num_vars):
         df_transations = numeric_cat_label_data.loc[numeric_cat_label_data['label'] == True].copy()
         label = df_transations['label']
         df_transations.drop('label', axis=1, inplace=True)
-        if df_transations.shape[0] > 50:
+        if df_transations.shape[0] > 1000:
             transations_list.append(df_transations)
             labels_list.append(label)
     return transations_list, labels_list
+
 
 def get_person_total_df(df, person, categories, cat_vars, num_vars):
     transations_list = []
     labels_list = []
-    df_cp = df[categories].copy()
-    cat_data = pd.get_dummies(df_cp[cat_vars])
-    numeric_data = df_cp[num_vars].copy()
-    numeric_cat_data = pd.concat([numeric_data, cat_data], axis=1)
-    initials = df_cp.loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
+    numeric_cat_data = pd.concat([df[categories][num_vars], pd.get_dummies(df[categories][cat_vars])], axis=1)
+    initials = df[categories].loc[df['Cardholder Last Name'] == person]['Cardholder First Initial'].value_counts().index.to_list()
 
     for initial in initials:
-        df_transations = numeric_cat_data.copy()
         label = (df['Cardholder Last Name'] == person)*(df['Cardholder First Initial'] == initial)
-        if df_transations.shape[0] > 100:
-            transations_list.append(df_transations)
+        if numeric_cat_data.shape[0] > 1000:
+            transations_list.append(numeric_cat_data)
             labels_list.append(label)
     return transations_list, labels_list
+
 
 def plot_confusion_matrix(cm, target_names, title='Confusion Matrix', cmap=plt.cm.Greens):
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
